@@ -1,0 +1,32 @@
+#!/bin/bash -l
+
+# ==== ONLY EDIT WITHIN THIS BLOCK =====
+
+export PANGEO_ENV="pangeo-notebook"
+if ! [[ -z "${PANGEO_SCRATCH_PREFIX}" ]] && ! [[ -z "${JUPYTERHUB_USER}" ]]; then
+    export PANGEO_SCRATCH="${PANGEO_SCRATCH_PREFIX}/${JUPYTERHUB_USER}/"
+fi
+
+echo "[INFO] Executing up startup scripts"
+for file in /usr/local/bin/*
+do
+  if [[ $file == *"start-notebook-"* ]]
+  then
+    echo "[INFO] Executing $file"
+    source "$file"
+  fi
+done
+echo "[INFO] Executing up startup scripts - Finished"
+
+source /resources/export-*.sh
+
+# ==== ONLY EDIT WITHIN THIS BLOCK =====
+
+if [[ ! -z "${JUPYTERHUB_API_TOKEN}" ]]; then
+  # launched by JupyterHub, use single-user entrypoint
+  exec /usr/local/bin/start-singleuser.sh "$@"
+elif [[ ! -z "${JUPYTER_ENABLE_LAB}" ]]; then
+  jupyter lab "$@"
+else
+  jupyter notebook "$@"
+fi

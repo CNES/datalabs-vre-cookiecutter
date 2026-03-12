@@ -1,0 +1,17 @@
+{
+  "project_name": "Cookiecutter VRE Communautaire",
+  "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '_') }}",
+  "author": "CNES",
+  "use_pangeo_notebook": false,
+  "use_pytorch_notebook": false,
+  "__prompts__": {
+    "project_name": "Name of your VRE",
+    "project_slug": "Slug of your VRE (no space)",
+    "author": "Project's author",
+    "use_pangeo_notebook": "Do you want to use the pangeo notebook layer (needed for pytorch layer)?",
+    "use_pytorch_notebook": "Do you want to use the pytorch notebook layer (need pangeo layer)?"
+  },
+  "_copy_without_render": [
+    ".github"
+  ]
+}
