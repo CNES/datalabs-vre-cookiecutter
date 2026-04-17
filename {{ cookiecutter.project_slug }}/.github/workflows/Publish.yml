@@ -1,0 +1,50 @@
+# Re-tag current image:master with image:TAG and image:latest
+# tags can be anything, but typically calver string (2024.07.02)
+name: Publish
+on:
+  push:
+    tags:
+    - '*'
+
+env:
+  DOCKER_ORG: cnes
+  GITHUB_REF: ${{ github.ref }}
+
+jobs:
+  matrix-build:
+    env:
+      IMAGE: cookiecutter.project_slug
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set Job Environment Variables
+      run: |
+        TAG="${GITHUB_REF##*/}"
+        echo "TAG=${TAG}" >> $GITHUB_ENV
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USER }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # - name: Login to Quay.io
+    #   uses: docker/login-action@v3
+    #   with:
+    #     registry: quay.io
+    #     username: ${{ secrets.QUAY_USER }}
+    #     password: ${{ secrets.QUAY_TOKEN }}
+
+    - name: Create New DockerHub Tags
+      run: |
+        docker buildx imagetools create ${DOCKER_ORG}/${{ env.IMAGE }}:master \
+          -t ${DOCKER_ORG}/${{ env.IMAGE }}:latest \
+          -t ${DOCKER_ORG}/${{ env.IMAGE }}:${TAG}
+
+    # - name: Create New Quay.io Tags
+    #   run: |
+    #     docker buildx imagetools create quay.io/${DOCKER_ORG}/${{ env.IMAGE }}:master \
+    #       -t quay.io/${DOCKER_ORG}/${{ env.IMAGE }}:latest \
+    #       -t quay.io/${DOCKER_ORG}/${{ env.IMAGE }}:${TAG}

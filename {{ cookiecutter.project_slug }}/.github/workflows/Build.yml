@@ -1,0 +1,80 @@
+# Any commit to master branch re-builds images, re-runs tests, and pushes SHA tags to DockerHub
+name: Build
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths-ignore:
+      - 'LICENSE'
+      - 'README.md'
+      - 'Makefile'
+      - 'environment-condalock.yml'
+      - 'update_lockfile.sh'
+
+env:
+  DOCKER_ORG: cnes
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_REF: ${{ github.ref }}
+
+jobs:
+  cookiecutter.project_slug:
+    env:
+      IMAGE: cookiecutter.project_slug
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set Job Environment Variables
+      run: |
+        CALVER="$( date -u '+%Y.%m.%d' )"
+        SHA7="${GITHUB_SHA::7}"
+        DOCKER_TAG=$SHA7
+        echo "DOCKER_TAG=${DOCKER_TAG}" >> $GITHUB_ENV
+
+    - name: Check out common modules
+      uses: actions/checkout@main
+      with:
+        repository: CNES/datalabs-common-modules
+        path: ${{ env.IMAGE }}/datalabs-common-modules
+
+    - name: Copy common modules
+      run: |
+        cd ${{ env.IMAGE }}
+        # if [ -f modules.txt ]; then 
+        ls
+        for module in `cat modules.txt`; do echo $module; cp -r datalabs-common-modules/${module} resources/.; done
+        # fi
+        rm -rf datalabs-common-modules
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USER }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        context: ${{ env.IMAGE }}
+        platforms: linux/amd64
+        push: true
+        tags: |
+          ${{env.DOCKER_ORG}}/${{ env.IMAGE }}:master
+          ${{env.DOCKER_ORG}}/${{ env.IMAGE }}:${{env.DOCKER_TAG}}
+
+    - name: Inspect Image
+      run: |
+        docker run ${DOCKER_ORG}/${{ env.IMAGE }}:master conda list
+        docker images ls
+
+    - name: Test Image
+      run: |
+        docker run -u 1000 -w /srv/test -v $PWD:/srv/test ${DOCKER_ORG}/${{ env.IMAGE }}:master ./run_tests.sh ${{ env.IMAGE }}
