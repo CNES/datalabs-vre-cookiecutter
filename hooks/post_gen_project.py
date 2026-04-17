@@ -1,7 +1,7 @@
 import os
 import subprocess
 import shutil
-
+from pathlib import Path
 
 def add_module(module, module_to_use, ignore_list):
     if module not in ignore_list:
@@ -20,6 +20,19 @@ def print_limit(title):
     print()
 
     return
+
+
+def replace_project_slug_in_github(project_slug):
+    cookie_slug = "cookiecutter.project_slug"
+    github_action_repo = Path(os.path.join(".github/workflows"))
+
+    for file_yml in github_action_repo.iterdir():
+        if file_yml.is_file():
+            content = file_yml.read_text()
+
+            if cookie_slug in content:
+                content = content.replace(cookie_slug, project_slug)
+                file_yml.write_text(content)
 
 
 def update():
@@ -81,7 +94,7 @@ modules = [f.name for f in os.scandir("datalabs-common-modules") if f.is_dir()]
 for module in modules:
     add_module(module, module_to_use, ignore_list)
 
-with open("module.txt", "w") as f:
+with open(os.path.join("{{ cookiecutter.project_slug }}","modules.txt"), "w") as f:
     for module in module_to_use:
         f.write(f"{module}\n")
 
@@ -98,5 +111,6 @@ os.chmod("run_tests.sh", 0o700)
 os.chmod("run_tests.sh", 0o700)
 os.chmod("update_base_layer.py", 0o700)
 
+replace_project_slug_in_github("{{ cookiecutter.project_slug }}")
 
 update()

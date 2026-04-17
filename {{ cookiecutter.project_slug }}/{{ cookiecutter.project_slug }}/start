@@ -2,7 +2,7 @@
 
 # ==== ONLY EDIT WITHIN THIS BLOCK =====
 
-export PANGEO_ENV="pangeo-notebook"
+export PANGEO_ENV="{{ cookiecutter.project_slug }}"
 if ! [[ -z "${PANGEO_SCRATCH_PREFIX}" ]] && ! [[ -z "${JUPYTERHUB_USER}" ]]; then
     export PANGEO_SCRATCH="${PANGEO_SCRATCH_PREFIX}/${JUPYTERHUB_USER}/"
 fi
@@ -18,15 +18,7 @@ do
 done
 echo "[INFO] Executing up startup scripts - Finished"
 
-source /resources/export-*.sh
 
 # ==== ONLY EDIT WITHIN THIS BLOCK =====
 
-if [[ ! -z "${JUPYTERHUB_API_TOKEN}" ]]; then
-  # launched by JupyterHub, use single-user entrypoint
-  exec /usr/local/bin/start-singleuser.sh "$@"
-elif [[ ! -z "${JUPYTER_ENABLE_LAB}" ]]; then
-  jupyter lab "$@"
-else
-  jupyter notebook "$@"
-fi
+exec "$@"
